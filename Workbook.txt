@@ -127,6 +127,9 @@
 || 14/05/2014 || Creacion de ramas.						       ||
 ||            ||                                                                       ||
 ++------------++-----------------------------------------------------------------------++
+|| 14/05/2014 || Creacion de ramas. Final                                              ||
+||            ||                                                                       ||
+++------------++-----------------------------------------------------------------------++
 
 Recomendaciones próxima reunión:
     Indexar de la tabla Usuarios, el login para una mayor respuesta de la aplicación.
