@@ -7,7 +7,13 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Activities
  *
- * @ORM\Table()
+ * @ORM\Table(  name="activities",
+ *              uniqueConstraints=
+ *                  {@ORM\UniqueConstraint(
+ *                      name="a_idx", 
+ *                      columns={"id", "groupSubject_id"}
+ *                  )}
+ * )
  * @ORM\Entity
  */
 class Activities
@@ -22,7 +28,7 @@ class Activities
     private $id;
 
     /**
-     * @ORM\ManyToOne(targetEntity="CourseGroupsSubjects")
+     * @ORM\ManyToOne(targetEntity="GroupsSubjects")
      */
     private $groupSubject;
     
@@ -191,10 +197,10 @@ class Activities
     /**
      * Set groupSubject
      *
-     * @param \Teaching\GeneralBundle\Entity\Groups $groupSubject
+     * @param \Teaching\GeneralBundle\Entity\GroupsSubjects $groupSubject
      * @return Activities
      */
-    public function setGroupSubject(\Teaching\GeneralBundle\Entity\Groups $groupSubject = null)
+    public function setGroupSubject(\Teaching\GeneralBundle\Entity\GroupsSubjects $groupSubject = null)
     {
         $this->groupSubject = $groupSubject;
     

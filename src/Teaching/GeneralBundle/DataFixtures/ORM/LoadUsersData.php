@@ -12,7 +12,10 @@ use Teaching\GeneralBundle\Entity\Courses;
 use Teaching\GeneralBundle\Entity\Groups;
 use Teaching\GeneralBundle\Entity\Enrollments;
 use Teaching\GeneralBundle\Entity\Subjects;
-use Teaching\GeneralBundle\Entity\CourseGroupsSubjects;
+use Teaching\GeneralBundle\Entity\GroupsSubjects;
+use Teaching\GeneralBundle\Entity\Activities;
+use Teaching\GeneralBundle\Entity\ActivitiesStudents;
+use Teaching\GeneralBundle\Entity\Ratings;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use DateTime;
 
@@ -51,14 +54,24 @@ class LoadUsersData extends Controller implements FixtureInterface
         // Load groups
         $this->loadGroups($manager);
         
-        // Load enrollments
+        // Load enrollments, students <> groups
         $this->loadEnrollments($manager);
         
         // Load subjects
         $this->loadSubjects($manager);
         
         // Load Subjects <> Courses
-        $this->loadCoursesGroupsSubjects($manager);
+        $this->loadGroupsSubjects($manager);
+	
+	// Load activities <> groups 
+	$this->loadActivities($manager);
+	
+        // Load activities <> students
+        $this->loadActivitiesStudents($manager);
+        
+        // Load ratings students
+        $this->loadRatings($manager);
+        
     }
     
     
@@ -73,20 +86,20 @@ class LoadUsersData extends Controller implements FixtureInterface
         // Contain users examples
         $data = array(
             '0' => array(
-                'username' => 'emilio',
-                'password' => 'emilio',
-                'rol' => 'ROLE_USER',
-                'name' => 'Emilio',
-                'surname' => 'Crespo Perán',
-                'email' => 'emiliocresxperia@gmail.com'
+                'username'  => 'emilio',
+                'password'  => 'emilio',
+                'rol'       => 'ROLE_USER',
+                'name'      => 'Emilio',
+                'surname'   => 'Crespo Perán',
+                'email'     => 'emiliocresxperia@gmail.com'
             ),
             '1' => array(
-                'username' => 'fran',
-                'password' => 'fran',
-                'rol' => 'ROLE_USER',
-                'name' => 'Fran',
-                'surname' => 'González Navarro',
-                'email' => 'fran@gmail.com'
+                'username'  => 'fran',
+                'password'  => 'fran',
+                'rol'       => 'ROLE_USER',
+                'name'      => 'Fran',
+                'surname'   => 'González Navarro',
+                'email'     => 'fran@gmail.com'
             ),
         );
         
@@ -123,9 +136,9 @@ class LoadUsersData extends Controller implements FixtureInterface
         $data = array(
             '0' => array(
                 'from_user' => 'emilio',
-                'to_user' => 'fran',
-                'subject' => 'Ej',
-                'message' => 'Ejemplo de mensaje'
+                'to_user'   => 'fran',
+                'subject'   => 'Ej',
+                'message'   => 'Ejemplo de mensaje'
             )
         );
         
@@ -164,20 +177,25 @@ class LoadUsersData extends Controller implements FixtureInterface
         // Contain some students
         $data = array(
             '0' => array(
-                'name' => 'Pablo',
-                'surname' => 'Crespo Perán'
+                'name'      => 'Pablo',
+                'surname'   => 'Crespo Perán',
+                'dni'       => '55578963A'
             ),
             '1' => array(
-                'name' => 'Pepe',
-                'surname' => 'González Navarro'
+                'name'      => 'Pepe',
+                'surname'   => 'González Navarro',
+                'dni'       => '50281490K'
             )
         );
         
         // Persist some students into database
         foreach($data as $students => $student){
             $class = new Students();
+            
             $class->setName($student['name']);
             $class->setSurname($student['surname']);
+            $class->setDni($student['dni']);
+            
             $manager->persist($class);
         }        
                 
@@ -201,10 +219,16 @@ class LoadUsersData extends Controller implements FixtureInterface
 	// Affilations examples
         $data = array(
             '0' => array(
-                'user' => 'emilio',
-                'student' => 'Pablo',
-                'relation' => 'Padre',
-                'main' => true
+                'user'      => 'emilio',
+                'student'   => '55578963A',
+                'relation'  => 'Padre',
+                'main'      => true
+            ),
+            '1' => array(
+                'user'      => 'fran',
+                'student'   => '50281490K',
+                'relation'  => 'Padre',
+                'main'      => false
             )
         );
         
@@ -213,7 +237,7 @@ class LoadUsersData extends Controller implements FixtureInterface
             $class = new Affilations();
             
             $user = $this->search($affilation['user'], 'Users', 'username');
-            $student = $this->search($affilation['student'], 'Students', 'name');
+            $student = $this->search($affilation['student'], 'Students', 'dni');
             
             $class->setUser($user);
             $class->setStudent($student);
@@ -306,14 +330,14 @@ class LoadUsersData extends Controller implements FixtureInterface
         // Data of enrollments
         $data = array(
             '0' => array(
-                'student' => 'Pablo',
-                'course' => '1º',
-                'letter' => 'A'
+                'student'   => '55578963A',
+                'course'    => '1º',
+                'letter'    => 'A'
             ),
             '1' => array(
-                'student' => 'Pepe',
-                'course' => '1º',
-                'letter' => 'B'
+                'student'   => '50281490K',
+                'course'    => '1º',
+                'letter'    => 'B'
             ),
         );
         
@@ -321,7 +345,7 @@ class LoadUsersData extends Controller implements FixtureInterface
         foreach($data as $enrollments => $enrollment){
             $class = new Enrollments();
             
-            $student = $this->search($enrollment['student'], 'Students', 'name');
+            $student = $this->search($enrollment['student'], 'Students', 'dni');
             $group = $this->searchGroup($enrollment['course'], $enrollment['letter']);
             
             $class->setGroup($group);
@@ -334,6 +358,7 @@ class LoadUsersData extends Controller implements FixtureInterface
         $manager->flush();
         
     }
+    
     
     
     /**
@@ -366,7 +391,7 @@ class LoadUsersData extends Controller implements FixtureInterface
      * 
      * @param \Doctrine\Common\Persistence\ObjectManager $manager
      */
-    private function loadCoursesGroupsSubjects(ObjectManager $manager)
+    private function loadGroupsSubjects(ObjectManager $manager)
     {
 	// Courses with groups
 //	$courses = array(
@@ -417,7 +442,7 @@ class LoadUsersData extends Controller implements FixtureInterface
 		
 		// For every group, there are a teacher wich teach a subject
 		for($i = 0; $i < count($group); $i++){
-		    $class = new CourseGroupsSubjects();
+		    $class = new GroupsSubjects();
 		    
 		    $class->setGroup($this->searchGroup($course, $group));
 		    $class->setSubject($this->search($subjects[$i], 'Subjects', 'name'));
@@ -432,6 +457,191 @@ class LoadUsersData extends Controller implements FixtureInterface
 	
 	$manager->flush();
 	
+    }
+    
+    
+    
+    /**
+     * Load activities
+     * 
+     * @param \Doctrine\Common\Persistence\ObjectManager $manager
+     */
+    private function loadActivities(ObjectManager $manager)
+    {
+	//
+	$data = array(
+	    '1º' => array(
+		'A' => array(
+		    'Matemáticas' => array(
+			'0' => array(
+			    'Activity_name' => 'Tarea para casa',
+			    'Type' => 'Ejercicios',
+			    'Description' => 'Ejercicios 1, 2, 3 y 4 de la página 17.',
+			    'Date_start' => new \Datetime(),
+			    'Date_end' => new \Datetime(),
+			),
+		    ),
+		),
+	    ),
+	);
+	
+	// Add activities
+	foreach($data as $courses => $course){
+	    
+	    foreach($course as $groups => $group){
+
+		foreach($group as $subjects => $subject){
+
+		    foreach($subject as $activities => $activity){
+
+			$class = new Activities();
+
+			$class->setGroupSubject($this->searchGroupSubject($courses, $groups, $subjects));
+			$class->setActivityName($activity['Activity_name']);
+			$class->setType($activity['Type']);
+			$class->setDescription($activity['Description']);
+			$class->setDateStart($activity['Date_start']);
+			$class->setDateEnd($activity['Date_end']);
+			
+			$manager->persist($class);
+		    }
+
+		}
+
+	    }
+	    
+	}
+	
+	$manager->flush();
+	
+    }
+    
+    
+    
+    /**
+     * 
+     * @param \Doctrine\Common\Persistence\ObjectManager $manager
+     */
+    private function loadActivitiesStudents(ObjectManager $manager)
+    {
+        // Contain some activities <> students
+        $data = array(
+            '1º' => array(
+                'A' => array(
+                    'Matemáticas' => array(
+                        '0' => array(
+                            'name'          => 'Tarea para casa',
+			    'type'          => 'Ejercicios',
+			    'description'   => 'Ejercicios 1, 2, 3 y 4 de la página 17.',
+                            'students' => array(
+                                '0' => array(
+                                    'student'       => '55578963A',
+                                    'state'         => null,
+                                    'score'         => null,
+                                    'observations'  => 'No Entregado',
+                                    'date'          => new \Datetime()
+                                ),
+                                '1' => array(
+                                    'student'       => '50281490K',
+                                    'state'         => 'Entregado.',
+                                    'score'         => 8,
+                                    'observations'  => 'Entregado correctamente',
+                                    'date'          => new \Datetime()
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        );
+        
+        // Persist activities students
+        foreach($data as $courses => $course){
+            
+            foreach($course as $groups => $group){
+                
+                foreach($group as $subjects => $subject){
+                    
+                    foreach($subject as $activities => $activity){
+;
+                        $activity_name = $activity['name'];
+                        $activity_type = $activity['type'];
+                        $activity_description = $activity['description'];
+                        $students = $activity['students'];
+                        
+                        foreach($students as $student){
+                            
+                            $class = new ActivitiesStudents();
+                            
+                            $class->setActivity($this->searchActivity($activity_name, $activity_type, $activity_description, $courses, $groups, $subjects)); 
+                            $class->setStudent($this->search($student['student'], 'Students', 'dni'));
+                            $class->setDate($student['date']);
+                            $class->setState($student['state']);
+                            $class->setScore($student['score']);
+                            $class->setObservations($student['observations']);
+                            
+                            $manager->persist($class);
+                            
+                        }
+                        
+                    }
+                    
+                }
+                
+            }
+            
+        }
+        
+        
+        
+        $manager->flush();
+        
+    }
+    
+    
+    
+    /**
+     * Load ratings students
+     * 
+     * @param \Doctrine\Common\Persistence\ObjectManager $manager
+     */
+    private function loadRatings(ObjectManager $manager)
+    {
+        // Contains some ratings <> students
+        $data = array(
+            'Matemáticas' => array(
+                '0' => array(
+                    'student'   => '55578963A',
+                    'mark'      => '8',
+                    'date'      => new \Datetime()
+                ),
+                '1' => array(
+                    'student'   => '50281490K',
+                    'mark'      => '9',
+                    'date'      => new \Datetime()
+                ),
+            ),
+        );
+        
+        // Persist ratings students
+        foreach($data as $subjects => $subject){
+            
+            foreach($subject as $students){
+                $class = new Ratings();
+                
+                $class->setStudent($this->search($students['student'], 'Students', 'dni'));
+                $class->setSubject($this->search($subjects, 'Subjects', 'name'));
+                $class->setMark($students['mark']);
+                $class->setDate($students['date']);
+                
+                $manager->persist($class);
+                
+            }
+            
+        }
+        
+        $manager->flush();
+        
     }
     
     
@@ -502,6 +712,56 @@ class LoadUsersData extends Controller implements FixtureInterface
         return $query;
     }
     
+    
+    
+    /**
+     * Find course subjects
+     * 
+     * @param type $course
+     * @param type $letter
+     * @param type $subject
+     * @return type
+     */
+    private function searchGroupSubject($course, $letter, $subject)
+    {
+	// Search subject
+	$subject_id = $this->search($subject, 'Subjects', 'name');
+	// Search group
+	$group_id = $this->searchGroup($course, $letter);
+	
+	// Entity to find a course group
+        $em = $this->getDoctrine()
+                ->getRepository('TeachingGeneralBundle:GroupsSubjects');
+        
+	// Find group subject
+	$query = $em->findOneBy(array('group' => $group_id, 'subject' => $subject_id));
+        
+        // Return group subject
+        return $query;
+    }
+    
+    
+    /**
+     * Return activity
+     * 
+     * @param type $name Name activity
+     * @param type $type Type activity
+     * @param type $description Description activity
+     * @return type
+     */
+    private function searchActivity($name, $type, $description, $course, $letter, $subject)
+    {
+        
+        $group_subject_id = $this->searchGroupSubject($course, $letter, $subject);
+
+        // Entity to find a course group
+        $em = $this->getDoctrine()
+                ->getRepository('TeachingGeneralBundle:Activities');
+        
+        $query = $em->findOneBy(array('groupSubject' => $group_subject_id, 'activityName' => $name, 'type' => $type, 'description' => $description));
+        
+        return $query;
+    }
     
     
 }
